@@ -2,7 +2,6 @@ from base import BindingWriter, SPECIAL_KEYS
 
 
 class EmacsBindingWriter(BindingWriter):
-    editor_name = 'Emacs'
     special_key_map = {key: emacs_key for key, emacs_key in zip(
         SPECIAL_KEYS, ['SPC', 'RET', 'DEL', '<insert>', '<deletechar>', *(c for c in '-=[];\',./')])}
     alt_map = {'SPC': 'SPC', 'RET': 'return', 'DEL': 'backspace', '<insert>': 'insert', '<deletechar>': 'delete'}
@@ -10,7 +9,14 @@ class EmacsBindingWriter(BindingWriter):
         "1234567890-=[];'#,./",
         '!"£$%^&*()_+{}:@~<>?')}
 
-    def create_entry(self, key_combo, command):
+    def __init__(self, output_name):
+        super().__init__('Emacs', output_name + '.el')
+
+    def create_entries(self, command, key_combos):
+        return ''.join((EmacsBindingWriter.create_entry(command, key_combo) for key_combo in key_combos))
+
+    @staticmethod
+    def create_entry(command, key_combo):
         return '(define-key global-map (kbd "{}") \'{})\n'.format(
             EmacsBindingWriter.translate_key_combo(key_combo), command)
 
@@ -21,6 +27,8 @@ class EmacsBindingWriter(BindingWriter):
 
     @staticmethod
     def translate_segment(segment):
+        if type(segment) == bool:
+            pass
         result = segment.key
 
         if segment.special:

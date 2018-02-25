@@ -2,17 +2,26 @@ from base import BindingWriter
 
 
 class IntelliJBindingWriter(BindingWriter):
-    editor_name = 'IntelliJ'
+    def __init__(self, output_name, parent_keymap='$default'):
+        super().__init__('IntelliJ', output_name + '.xml')
+        self.output_name = output_name
+        self.parent_keymap = parent_keymap
 
     def create_header(self):
-        return '<keymap version="1" name="{}" parent="$default">'.format(self.output_filename)
+        return '<keymap version="1" name="{}" parent="{}">'.format(self.output_name, self.parent_keymap)
 
-    def create_entry(self, key_combo, command):
-        foo = '''
-  <action id="{}">
-    <keyboard-shortcut {}/>
-  </action>'''.format(command, ' '.join((self.create_keystroke(n + 1, segment) for n, segment in enumerate(key_combo))))
-        return foo
+    def create_entries(self, command, key_combos):
+        return '''
+  <action id="{}">{}
+  </action>'''.format(command, ''.join((IntelliJBindingWriter.create_sub_entry(key_combo) for key_combo in key_combos)))
+
+    def create_footer(self):
+        return '\n</keymap>'
+
+    @staticmethod
+    def create_sub_entry(key_combo):
+        return '\n    <keyboard-shortcut {}/>'.format(
+            ' '.join((IntelliJBindingWriter.create_keystroke(n + 1, segment) for n, segment in enumerate(key_combo))))
 
     @staticmethod
     def create_keystroke(number, segment):
@@ -23,6 +32,3 @@ class IntelliJBindingWriter(BindingWriter):
     @staticmethod
     def translate_segment(segment):
         return ('shift ' if segment.shift else '') + ('alt ' if segment.alt else '') + segment.key
-
-    def create_footer(self):
-        return '\n</keymap>'
