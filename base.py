@@ -5,11 +5,13 @@ from collections import namedtuple
 
 MODIFIERS = ['shift', 'ctrl', 'alt']
 
+F_KEYS = ['f' + str(i+1) for i in range(12)]
+
 SPECIAL_KEYS = ['space', 'enter', 'back_space', 'insert', 'delete',
                 'minus', 'equals', 'open_bracket', 'close_bracket',
-                'semicolon', 'quote', 'comma', 'period', 'slash']
+                'semicolon', 'quote', 'comma', 'period', 'slash', *F_KEYS]
 
-KeyComboSegment = namedtuple('KeyComboSegment', MODIFIERS + ['key', 'special'])
+KeyComboSegment = namedtuple('KeyComboSegment', MODIFIERS + ['key'])
 
 
 def tolerant_mkdir(path):
@@ -46,8 +48,7 @@ class Binding:
         modifier_matches = [mod in present_modifiers for mod in self.MODIFIERS_WITH_SPACES]
 
         running_result.append(
-            KeyComboSegment(*modifier_matches, match.group(self.N_MODIFIERS + 1),
-                            match.group(self.N_MODIFIERS + 1) in SPECIAL_KEYS))
+            KeyComboSegment(*modifier_matches, match.group(self.N_MODIFIERS + 1)))
 
         return self.parse(match.group(self.N_MODIFIERS + 2), running_result)
 

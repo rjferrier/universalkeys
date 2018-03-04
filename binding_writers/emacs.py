@@ -1,13 +1,14 @@
-from base import BindingWriter, SPECIAL_KEYS
+from base import BindingWriter, SPECIAL_KEYS, F_KEYS
 
 
 class EmacsBindingWriter(BindingWriter):
-    special_key_map = {key: emacs_key for key, emacs_key in zip(
-        SPECIAL_KEYS, ['SPC', 'RET', 'DEL', '<insert>', '<deletechar>', *(c for c in '-=[];\',./')])}
-    alt_map = {'SPC': 'SPC', 'RET': 'return', 'DEL': 'backspace', '<insert>': 'insert', '<deletechar>': 'delete'}
-    shift_map = {key: shifted for key, shifted in zip(
+    SHIFT_MAP = {key: shifted for key, shifted in zip(
         "1234567890-=[];'#,./",
         '!"£$%^&*()_+{}:@~<>?')}
+    SPECIAL_MAP = {key: emacs_key for key, emacs_key in zip(
+        SPECIAL_KEYS,
+        ['SPC', 'return', 'delete', 'insert', 'deletechar', *(c for c in '-=[];\',./'), *F_KEYS])}
+    BRACKETED = ['return', 'delete', 'insert', 'deletechar', *F_KEYS]
 
     def __init__(self, output_name):
         super().__init__('Emacs', output_name + '.el')
@@ -27,38 +28,24 @@ class EmacsBindingWriter(BindingWriter):
 
     @staticmethod
     def translate_segment(segment):
-        if type(segment) == bool:
-            pass
-        result = segment.key
+        try:
+            result = EmacsBindingWriter.SPECIAL_MAP[segment.key]
+        except KeyError:
+            result = segment.key
 
-        if segment.special:
-            result = EmacsBindingWriter.special_key_map[result]
+        envelope = '<{}>' if result in EmacsBindingWriter.BRACKETED else '{}'
 
         if segment.shift:
-            result = EmacsBindingWriter.shift(result, segment.special)
+            result = EmacsBindingWriter.shift(result, segment.key in SPECIAL_KEYS)
 
-        if segment.ctrl:
-            result = EmacsBindingWriter.alter(result, 'C')
-
-        if segment.alt:
-            result = EmacsBindingWriter.alter(result, 'A')
-
-        return result
+        return envelope.format(('A-' if segment.alt else '') + ('C-' if segment.ctrl else '') + result)
 
     @staticmethod
     def shift(key, is_special):
         try:
-            return EmacsBindingWriter.shift_map[key]
+            return EmacsBindingWriter.SHIFT_MAP[key]
         except KeyError:
             pass
         if not is_special and key.isalpha():
             return key.upper()
         return 'S-' + key
-
-    @staticmethod
-    def alter(key, prefix_letter):
-        try:
-            return '<{}-{}>'.format(prefix_letter, EmacsBindingWriter.alt_map[key])
-        except KeyError:
-            pass
-        return '{}-{}'.format(prefix_letter, key)
