@@ -45,15 +45,23 @@ class Binding:
         return self.parse(match.group(4), running_result)
 
 
+def count_key_columns(header):
+    for i, txt in enumerate(header):
+        if txt.lower() != 'key' and txt:
+            return i
+
+
 def extract_bindings(csv_filename):
     with open(csv_filename, 'r') as csv_file:
         rows = reader(csv_file, delimiter='\t')
         header = next(rows)
-        return [Binding(editor, command, key_expression=row[0])
+        n = count_key_columns(header)
+        return [Binding(editor, command, key_expression)
                 for row in rows
-                for editor, commands in zip(header[1:], row[1:])
+                for editor, commands in zip(header[n:], row[n:])
+                for key_expression in (row[j] for j in range(n))
                 for command in commands.split(',')
-                if any(row) and commands]
+                if any(row) and key_expression and commands]
 
 
 class BindingWriter:
@@ -90,4 +98,3 @@ class BindingWriter:
 
     def create_footer(self):
         return ''
-
