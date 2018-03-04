@@ -37,8 +37,11 @@ class EmacsBindingWriter(BindingWriter):
         if segment.shift:
             result = EmacsBindingWriter.shift(result, segment.special)
 
+        if segment.ctrl:
+            result = EmacsBindingWriter.alter(result, 'C')
+
         if segment.alt:
-            result = EmacsBindingWriter.alter(result)
+            result = EmacsBindingWriter.alter(result, 'A')
 
         return result
 
@@ -53,9 +56,9 @@ class EmacsBindingWriter(BindingWriter):
         return 'S-' + key
 
     @staticmethod
-    def alter(key):
+    def alter(key, prefix_letter):
         try:
-            return '<A-{}>'.format(EmacsBindingWriter.alt_map[key])
+            return '<{}-{}>'.format(prefix_letter, EmacsBindingWriter.alt_map[key])
         except KeyError:
             pass
-        return 'A-' + key
+        return '{}-{}'.format(prefix_letter, key)

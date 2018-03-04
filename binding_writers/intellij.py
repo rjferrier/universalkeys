@@ -31,4 +31,7 @@ class IntelliJBindingWriter(BindingWriter):
 
     @staticmethod
     def translate_segment(segment):
-        return ('shift ' if segment.shift else '') + ('alt ' if segment.alt else '') + segment.key
+        return ('shift ' if segment.shift else '') + \
+               ('ctrl ' if segment.alt else '') + \
+               ('alt ' if segment.alt else '') + \
+               segment.key

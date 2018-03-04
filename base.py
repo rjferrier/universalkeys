@@ -3,11 +3,13 @@ import re
 from csv import reader
 from collections import namedtuple
 
-KeyComboSegment = namedtuple('KeyComboSegment', ['shift', 'alt', 'key', 'special'])
+MODIFIERS = ['shift', 'ctrl', 'alt']
 
 SPECIAL_KEYS = ['space', 'enter', 'back_space', 'insert', 'delete',
                 'minus', 'equals', 'open_bracket', 'close_bracket',
                 'semicolon', 'quote', 'comma', 'period', 'slash']
+
+KeyComboSegment = namedtuple('KeyComboSegment', MODIFIERS + ['key', 'special'])
 
 
 def tolerant_mkdir(path):
@@ -18,7 +20,11 @@ def tolerant_mkdir(path):
 
 
 class Binding:
-    regex = re.compile('(?:.*?)(shift |alt )?(shift |alt )?([^ ,]+)(.*)')
+    N_MODIFIERS = len(MODIFIERS)
+    MODIFIERS_WITH_SPACES = [mod + ' ' for mod in MODIFIERS]
+    REGEX = re.compile('(?:.*?)' +
+                       ''.join(['({})?'.format('|'.join(MODIFIERS_WITH_SPACES))] * N_MODIFIERS) +
+                       '([^ ,]+)(.*)')
 
     def __init__(self, editor, command, key_expression):
         self.editor = editor
@@ -32,17 +38,18 @@ class Binding:
         if running_result is None:
             running_result = []
 
-        match = self.regex.match(key_combo)
+        match = self.REGEX.match(key_combo)
         if not match:
             return running_result
 
-        running_result.append(
-            KeyComboSegment('shift ' in (match.group(1), match.group(2)),
-                            'alt ' in (match.group(1), match.group(2)),
-                            match.group(3),
-                            match.group(3) in SPECIAL_KEYS))
+        present_modifiers = [match.group(i+1) for i in range(self.N_MODIFIERS) if match.group(i+1)]
+        modifier_matches = [mod in present_modifiers for mod in self.MODIFIERS_WITH_SPACES]
 
-        return self.parse(match.group(4), running_result)
+        running_result.append(
+            KeyComboSegment(*modifier_matches, match.group(self.N_MODIFIERS + 1),
+                            match.group(self.N_MODIFIERS + 1) in SPECIAL_KEYS))
+
+        return self.parse(match.group(self.N_MODIFIERS + 2), running_result)
 
 
 def count_key_columns(header):
